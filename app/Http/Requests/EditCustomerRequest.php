@@ -22,7 +22,7 @@ class EditCustomerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_name' => 'required|string|min:2',
+            'username' => 'required|string|min:2',
             'shop_name' => 'nullable|string|min:2',
             'city' => 'nullable|string|min:2',
             'phone_number' => 'nullable|min:6|integer',

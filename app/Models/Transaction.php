@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class Customer extends Model
+class Transaction extends Model
 {
     use HasFactory, SoftDeletes;
 
@@ -16,11 +16,11 @@ class Customer extends Model
      * @var array<int, string>
      */
     protected $fillable = [
-        'user_id',
-        'user_name',
-        'shop_name',
-        'city',
-        'phone_number',
+        'customer_id',
+        'transaction_type',
+        'amount',
+        'transaction_date',
+        'description',
     ];
 
     protected $hidden = [
@@ -41,9 +41,9 @@ class Customer extends Model
         ];
     }
 
-    //many to one relationship with users table
-    public function user()
+    //Many to one relationship with customers table
+    public function customers()
     {
-        return $this->belongsTo(User::class);
+        return $this->hasOne( Customer::class, 'id', 'customer_id' );
     }
 }

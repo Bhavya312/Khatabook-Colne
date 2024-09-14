@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class AddCustomerRequest extends FormRequest
+class AddTransactionRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
@@ -22,11 +22,11 @@ class AddCustomerRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'user_id' => 'required|exists:users,id',
-            'username' => 'required|string|min:2',
-            'shop_name' => 'nullable|string|min:2',
-            'city' => 'nullable|string|min:2',
-            'phone_number' => 'nullable|min:6|integer',
+            'customer_id' => 'required|exists:customers,id',
+            'transaction_type' => 'required|boolean',
+            'amount' => 'required|digits_between:1,999999999',
+            'transaction_date' => 'required|date',
+            'description' => 'required|string|min:5',
         ];
     }
 }

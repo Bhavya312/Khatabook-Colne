@@ -38,6 +38,9 @@ class User extends Authenticatable implements JWTSubject
         'deleted_at',
     ];
 
+
+    protected $appends = ['credit_total', 'debit_total'];
+
     /**
      * Get the attributes that should be cast.
      *
@@ -72,5 +75,27 @@ class User extends Authenticatable implements JWTSubject
     public function getJWTCustomClaims()
     {
         return []; // You can add custom claims here if needed
+    }
+
+    public function getCreditTotalAttribute()
+    {
+        $id = $this->id;
+        $transactions = Transaction::whereHas('customers', function($query) use($id) {
+                                            $query->where('user_id', $id);
+                                        })
+                                    ->where('transaction_type', 1)
+                                    ->sum('amount');
+        return $transactions;
+    }
+
+    public function getDebitTotalAttribute()
+    {
+        $id = $this->id;
+        $transactions = Transaction::whereHas('customers', function($query) use($id) {
+                                            $query->where('user_id', $id);
+                                        })
+                                        ->where('transaction_type', 0)
+                                        ->sum('amount');
+        return $transactions;
     }
 }

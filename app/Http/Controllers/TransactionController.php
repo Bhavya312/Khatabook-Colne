@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\AddCustomerRequest;
-use App\Http\Requests\EditCustomerRequest;
-use App\Models\Customer;
-use Exception;
+use App\Http\Requests\AddTransactionRequest;
+use App\Http\Requests\EditTransactionRequest;
+use App\Models\Transaction;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Exception;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 
-class CustomerController extends Controller
+class TransactionController extends Controller
 {
     /**
      * Display a listing of the resource.
@@ -23,23 +24,30 @@ class CustomerController extends Controller
             $sortOrder = $request->sort_order ?? 'desc';
             $search = trim($request->search);
 
-            $customers = Customer::with('user');
+            $transactions = Transaction::with('customers');
 
             if($search):
-                $customers = $customers->where(function($query) use($search){
-                                            $query->where('username', 'LIKE', '%'.$search.'%');
-                                            $query->orWhere('shop_name', 'LIKE', '%'.$search.'%');
-                                            $query->orWhere('phone_number', 'LIKE', '%'.$search.'%');
-                                });
+                $transactions = $transactions->where(function($query) use($search){
+                                            $query->where('amount', 'LIKE', '%'.$search.'%');
+                                            $query->orWhere('transaction_type', 'LIKE', '%'.$search.'%');
+                                            $query->orWhere('description', 'LIKE', '%'.$search.'%');
+
+                                            $query->orWhereHas('customers', function($query) use($search) {
+                                                $query->where('username', 'LIKE', '%'.$search.'%');
+                                                $query->orWhere('shop_name', 'LIKE', '%'.$search.'%');
+                                                $query->orWhere('city', 'LIKE', '%'.$search.'%');
+                                            });
+                                    });
             endif;
 
-            $customers = $customers->orderBy($sortColumn, $sortOrder);
-            $customers = $customers->latest()->paginate($limit);
+            $transactions = $transactions->orderBy($sortColumn, $sortOrder);
+            $transactions = $transactions->latest()->paginate($limit);
             return response()->json([
                                             'status' => 200,
-                                            'data' => $customers,
+                                            'data' => $transactions,
                                         ], 200);
         }catch(Exception $e) {
+            return $e;
             return response()->json([
                                         'status' => 500,
                                         'error' => __('notifications.somthing_went_wrong')
@@ -53,8 +61,8 @@ class CustomerController extends Controller
     public function store(Request $request)
     {
         try{
-            $addCustomerRequest = new AddCustomerRequest();
-            $validator = Validator::make($request->all(), $addCustomerRequest->rules());
+            $addTransactionRequest = new AddTransactionRequest();
+            $validator = Validator::make($request->all(), $addTransactionRequest->rules());
             if($validator->fails()):
                 return response()->json([
                                     'status' => 403,
@@ -62,16 +70,17 @@ class CustomerController extends Controller
                                 ], 403);
             else:
                 DB::beginTransaction();
-                $customer = new Customer();
-                $customer->user_id = $request->user_id;
-                $customer->username = $request->username;
-                $customer->shop_name = $request->shop_name;
-                $customer->phone_number = $request->phone_number;
-                $customer->save();
+                    $transaction = new Transaction();
+                    $transaction->customer_id = $request->customer_id;
+                    $transaction->transaction_type = $request->transaction_type;
+                    $transaction->amount = $request->amount;
+                    $transaction->transaction_date = Carbon::parse($request->transaction_date)->format('Y-m-d');
+                    $transaction->description = $request->description;
+                    $transaction->save();
                 DB::commit();
                 return response()->json([
                                             'status' => 200,
-                                            'error' => __('notifications.data_created', ['model' => "Customer"])
+                                            'error' => __('notifications.data_created', ['model' => "Transaction"])
                                         ], 200);
             endif;
         }catch(Exception $e){
@@ -89,17 +98,17 @@ class CustomerController extends Controller
     public function show($id)
     {
         try{
-            $customer = Customer::find($id);
-            if($customer):
+            $transaction = Transaction::find($id);
+            if($transaction):
                 return response()->json([
                                             'status' => 200,
-                                            'data' => $customer,
-                                            'message' => __('notifications.data_found', ['model' => "Customer"])
+                                            'data' => $transaction,
+                                            'message' => __('notifications.data_found', ['model' => "Transaction"])
                                         ], 200);
             else:
                 return response()->json([
                                             'status' => 200,
-                                            'error' => __('notifications.data_not_found', ['model' => "Customer"])
+                                            'error' => __('notifications.data_not_found', ['model' => "Transaction"])
                                         ], 200);
             endif;
         }catch(Exception $e){
@@ -116,10 +125,10 @@ class CustomerController extends Controller
     public function update(Request $request, $id)
     {
         try{
-            $customer = Customer::find($id);
-            if($customer):
-                $editCustomerRequest = new EditCustomerRequest();
-                $validator = Validator::make($request->all(), $editCustomerRequest->rules());
+            $transaction = Transaction::find($id);
+            if($transaction):
+                $editTransactionRequest = new EditTransactionRequest();
+                $validator = Validator::make($request->all(), $editTransactionRequest->rules());
                 if($validator->fails()):
                     return response()->json([
                                             'status' => 403,
@@ -127,23 +136,23 @@ class CustomerController extends Controller
                                         ], 403);
                 else:
                     DB::beginTransaction();
-                        $customer->username = $request->username;
-                        $customer->shop_name = $request->shop_name;
-                        $customer->city = $request->city;
-                        $customer->phone_number = $request->phone_number;
-                        $customer->update();
+                        $transaction->transaction_type = $request->transaction_type;
+                        $transaction->amount = $request->amount;
+                        $transaction->transaction_date = Carbon::parse($request->transaction_date)->format('Y-m-d');
+                        $transaction->description = $request->description;
+                        $transaction->update();
                     DB::commit();
                 endif;
 
                 return response()->json([
                                             'status' => 200,
-                                            'data' => $customer,
-                                            'message' => __('notifications.data_updated', ['model' => "Customer"])
+                                            'data' => $transaction,
+                                            'message' => __('notifications.data_updated', ['model' => "Transaction"])
                                         ], 200);
             else:
                 return response()->json([
                                             'status' => 200,
-                                            'error' => __('notifications.data_not_found', ['model' => "Customer"])
+                                            'error' => __('notifications.data_not_found', ['model' => "Transaction"])
                                         ], 200);
             endif;
         }catch(Exception $e){
@@ -161,19 +170,19 @@ class CustomerController extends Controller
     public function destroy($id)
     {
         try{
-            $customer = Customer::find($id);
-            if($customer):
+            $transaction = Transaction::find($id);
+            if($transaction):
                 DB::beginTransaction();
-                    $customer->delete();
+                    $transaction->delete();
                 DB::commit();
                 return response()->json([
                                             'status' => 200,
-                                            'message' => __('notifications.data_deleted', ['model' => "Customer"])
+                                            'message' => __('notifications.data_deleted', ['model' => "Transaction"])
                                         ]);
             else:
                 return response()->json([
                                             'status' => 200,
-                                            'error' => __('notifications.data_not_found', ['model' => "Customer"])
+                                            'error' => __('notifications.data_not_found', ['model' => "Transaction"])
                                         ], 200);
             endif;
         }catch(Exception $e){

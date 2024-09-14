@@ -11,13 +11,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('customers', function (Blueprint $table) {
+        Schema::create('transactions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('username');
-            $table->text('shop_name')->nullable();
-            $table->string('city')->nullable();
-            $table->bigInteger('phone_number')->nullable();
+            $table->foreignId('customer_id')->constrained()->cascadeOnDelete();
+            $table->boolean('transaction_type')->comment('0 - Debit | 1 - Credit');
+            $table->decimal('amount', 10, 2);
+            $table->date('transaction_date');
+            $table->text('description')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
@@ -28,6 +28,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('customers');
+        Schema::dropIfExists('transactions');
     }
 };
